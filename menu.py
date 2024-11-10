@@ -45,11 +45,11 @@ def zacetna_stran():
         zacetni_rect = zacetno_besedilo.get_rect(center=(SCREEN_WIDTH // 2, 100))
 
         igraj_gumb = Button(image=pygame.image.load(path("Rect.png")), hovering_image=pygame.image.load(path("Rect1.png")),
-                            pos=(SCREEN_WIDTH // 2, SCREEN_HEIGHT * 0.4), text_input="IGRAJ", font=TEST_FONT, base_color=BLACK, hovering_color=WHITE)
+                            pos=(SCREEN_WIDTH // 2, SCREEN_HEIGHT * 0.4), text_input="PLAY", font=TEST_FONT, base_color=BLACK, hovering_color=WHITE)
         navodila_gumb = Button(image=pygame.image.load(path("Rect.png")), hovering_image=pygame.image.load(path("Rect1.png")),
-                               pos=(SCREEN_WIDTH // 2, SCREEN_HEIGHT * 0.6), text_input="NAVODILA", font=TEST_FONT, base_color=BLACK, hovering_color=WHITE)
+                               pos=(SCREEN_WIDTH // 2, SCREEN_HEIGHT * 0.6), text_input="HOW TO PLAY", font=TEST_FONT, base_color=BLACK, hovering_color=WHITE)
         izhod_gumb = Button(image=pygame.image.load(path("Rect.png")), hovering_image=pygame.image.load(path("Rect1.png")),
-                            pos=(SCREEN_WIDTH // 2, SCREEN_HEIGHT * 0.8), text_input="IZHOD", font=TEST_FONT, base_color=BLACK, hovering_color=WHITE)
+                            pos=(SCREEN_WIDTH // 2, SCREEN_HEIGHT * 0.8), text_input="EXIT", font=TEST_FONT, base_color=BLACK, hovering_color=WHITE)
 
         screen.blit(zacetno_besedilo, zacetni_rect)
 
@@ -79,7 +79,7 @@ def zacetna_stran():
 
 
 def igraj():
-    pygame.display.set_caption("Igraj")
+    pygame.display.set_caption("PLAY")
 
     running = True
     while running:
@@ -92,7 +92,7 @@ def igraj():
 
         screen.blit(igraj_besedilo, igraj_rect)
 
-        nazaj = Button(image=None, hovering_image=None, pos=(640, 460), text_input="NAZAJ", font=TEST_FONT,
+        nazaj = Button(image=None, hovering_image=None, pos=(640, 460), text_input="BACK", font=TEST_FONT,
                        base_color=WHITE, hovering_color=BLACK)
 
         nazaj.changeColor(igraj_miska_pos)
@@ -109,7 +109,7 @@ def igraj():
         clock.tick(60)
 
 def navodila():
-    pygame.display.set_caption("Navodila")
+    pygame.display.set_caption("HOW TO PLAY")
 
     running = True
     while running:
@@ -122,21 +122,21 @@ def navodila():
         pygame.draw.rect(screen, (0, 0, 0), [600, 100, 500, 400], width = 3)
 
 
-        navodila_besedilo1 = TEST_FONT.render('Igre je konec!', False, BLACK)
+        navodila_besedilo1 = TEST_FONT.render('Game over!', False, BLACK)
         navodila_rect1 = navodila_besedilo1.get_rect(topleft=(750, 150)) # center = (left+width//2, top + 50)
         screen.blit(navodila_besedilo1, navodila_rect1)
 
-        resevanje_besedilo = TEST_FONT.render('Resili ste 5 dreves.', False, BLACK)
+        resevanje_besedilo = TEST_FONT.render('You saved 5 trees.', False, BLACK)
         resevanje_rect = resevanje_besedilo.get_rect(topleft=(720, 250))
         screen.blit(resevanje_besedilo, resevanje_rect)
 
-        resevanje_besedilo2 = TEST_FONT.render('Bravo!', False, BLACK)
+        resevanje_besedilo2 = TEST_FONT.render('Congrats!', False, BLACK)
         resevanje_rect2 = resevanje_besedilo2.get_rect(topleft=(795, 350))
         screen.blit(resevanje_besedilo2, resevanje_rect2)
 
         
 
-        nazaj = Button(image=None, hovering_image=None, pos=(640, 460), text_input="NAZAJ", font=TEST_FONT,
+        nazaj = Button(image=None, hovering_image=None, pos=(640, 460), text_input="BACK", font=TEST_FONT,
                        base_color=WHITE, hovering_color=BLACK)
 
         nazaj.changeColor(navodila_miska_pos)

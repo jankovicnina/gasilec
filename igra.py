@@ -49,11 +49,11 @@ def dobi_st_dreves():
                             if 3 <= st_dreves <= 20:
                                 return st_dreves
                             else:
-                                napaka = "Vpišite število dreves med 3 in 20."
+                                napaka = "Input an integer between 3 and 20."
                         except ValueError:
-                            napaka = "Vpišite celo število med 3 in 20."
+                            napaka = "Input an integer between 3 and 20."
                     else:
-                        napaka = "Vpišite število dreves med 3 in 20."
+                        napaka = "Input an integer between 3 and 20."
                 #izbrise zadnjo stevilko
                 elif event.key == pygame.K_BACKSPACE:
                     input_text = input_text[:-1]
@@ -63,7 +63,7 @@ def dobi_st_dreves():
         screen_width, screen_height = pygame.display.get_surface().get_size()
 
         #vstavi besedilo na sredino
-        text_surface = font.render("Število dreves:", True, CRNA)
+        text_surface = font.render("Number of trees:", True, CRNA)
         text_rect = text_surface.get_rect(center=(screen_width // 2, screen_height // 2 - 25))
         screen.blit(text_surface, text_rect)
 
