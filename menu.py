@@ -1,5 +1,5 @@
 import os, pygame
-from Razredi.gumbi import Button
+from Razredi.buttons import Button
 from pygame.locals import *
 
 #inicializacija
