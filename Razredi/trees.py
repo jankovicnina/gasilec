@@ -12,7 +12,7 @@ class Tree:
         path = os.path.join("Slike_in_fonti", image_name)
         self.image = pygame.image.load(path)
         self.image = pygame.transform.scale(self.image, (80, 100))
-
+    
     def draw(self, screen):
         if self.color == (0, 0, 0):
             self.load_image("negorece.png")
@@ -37,3 +37,7 @@ class Tree:
             rect = self.image.get_rect(topleft=(self.x, self.y))
             return rect.collidepoint(pos)
         return False
+    
+    def is_hovered(self, mouse_pos):
+        tree_rect = pygame.Rect(self.x, self.y, 80, 100)
+        return tree_rect.collidepoint(mouse_pos)
