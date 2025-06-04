@@ -45,7 +45,12 @@ def asset_path(name):
 # Fonts
 FONT_PATH = asset_path("Pixeltype.ttf")
 font = pygame.font.Font(FONT_PATH, 40)
+
+#rocks
 rock_image = pygame.image.load(asset_path("rock.png")).convert_alpha()
+rock_highlighted = pygame.image.load(asset_path("rock_highlighted.png")).convert_alpha()
+
+
 
 def get_tree_count():
     running = True
@@ -100,12 +105,11 @@ def generate_forest(tree_count):
     forest = []
     screen_width, screen_height = pygame.display.get_surface().get_size()
 
-    layout = nx.spring_layout(graph, seed=random.randint(0, 10000))
-    min_x, max_x = min(pos[0] for pos in layout.values()), max(pos[0] for pos in layout.values())
-    min_y, max_y = min(pos[1] for pos in layout.values()), max(pos[1] for pos in layout.values())
+    # Layout with tighter clustering
+    layout = nx.kamada_kawai_layout(graph)
 
     avoid_rect = pygame.Rect(0, 0, 220, 110)
-    min_distance = 16  # Minimum distance between trees
+    min_distance = math.hypot(80, 100) + 10  # ≈ 130 pixels
 
     def is_far_enough(x, y):
         for tree in forest:
@@ -115,33 +119,35 @@ def generate_forest(tree_count):
                 return False
         return True
 
+    # Normalize positions to screen
+    padding_x, padding_y = 100, 100  # Keep some space from screen edges
     for i in range(tree_count):
         pos = layout[i]
-        x = int((pos[0] - min_x) / (max_x - min_x) * (screen_width - 80))
-        y = int((pos[1] - min_y) / (max_y - min_y) * (screen_height - 100))
+        x = int(padding_x + (pos[0] + 1) / 2 * (screen_width - 2 * padding_x - 80))
+        y = int(padding_y + (pos[1] + 1) / 2 * (screen_height - 2 * padding_y - 100))
 
-        # Ensure trees don't spawn in the top-left info box or too close to others
+        # Retry if too close to other trees or the status box
         attempts = 0
         while avoid_rect.collidepoint(x + 20, y + 40) or not is_far_enough(x, y):
-            x = random.randint(0, screen_width - 80)
-            y = random.randint(0, screen_height - 100)
+            x = random.randint(padding_x, screen_width - padding_x - 80)
+            y = random.randint(padding_y, screen_height - padding_y - 100)
             attempts += 1
             if attempts > 500:
-                break  # Avoid infinite loop in rare layout failures
+                break  # Prevent infinite loop
 
         tree = Tree(x, y)
         forest.append(tree)
 
+    # Assign neighbors
     for i, tree in enumerate(forest):
         tree.neighbors = [forest[n] for n in graph.neighbors(i)]
 
+    # Set a random burning tree with degree > 1
     candidates = [tree for tree in forest if len(tree.neighbors) > 1]
-    if candidates:
-        random.choice(candidates).color = RED
-    else:
-        random.choice(forest).color = RED
+    (random.choice(candidates) if candidates else random.choice(forest)).color = RED
 
     return forest
+
 
 
 def get_burning_trees(forest):
@@ -224,12 +230,23 @@ def main():
                         tree.protect()
                         next_turn(forest)
 
+        hovered_tree = None
+        mouse_pos = pygame.mouse.get_pos()
+        for tree in forest:
+            if tree.is_hovered(mouse_pos):
+                hovered_tree = tree
+                break
+
         for i, tree in enumerate(forest):
             for neighbor in tree.neighbors:
                 if i < forest.index(neighbor):  # Avoid double-drawing paths
-                    start_pos = (tree.x + 40, tree.y + 95)     # Bottom center of current tree
-                    end_pos = (neighbor.x + 40, neighbor.y + 50)     # Top center of neighbor tree
-                    draw_rocky_path(screen, start_pos, end_pos, rock_image)
+                    start_pos = (tree.x + 40, tree.y + 95)
+                    end_pos = (neighbor.x + 40, neighbor.y + 50)
+
+                    if hovered_tree and (tree == hovered_tree or neighbor == hovered_tree):
+                        draw_rocky_path(screen, start_pos, end_pos, rock_highlighted)
+                    else:
+                        draw_rocky_path(screen, start_pos, end_pos, rock_image)
 
 
         for tree in forest:
