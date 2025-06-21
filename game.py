@@ -144,9 +144,10 @@ def generate_forest(tree_count):
 
     # Set a random burning tree with degree > 1
     candidates = [tree for tree in forest if len(tree.neighbors) > 1]
-    (random.choice(candidates) if candidates else random.choice(forest)).color = RED
+    initial_burning_tree = random.choice(candidates) if candidates else random.choice(forest)
+    initial_burning_tree.color = RED
 
-    return forest
+    return forest, initial_burning_tree
 
 
 
@@ -188,8 +189,8 @@ def count_saved_trees(forest):
 
 
 
-def draw_status_box(screen, forest):
-    box_width, box_height = 250, 150
+def draw_status_box(screen, forest, game_over):
+    box_width, box_height = 200, 160
     pygame.draw.rect(screen, GRAY, (0, 0, box_width, box_height))
 
     burning = sum(tree.color == RED for tree in forest)
@@ -203,6 +204,14 @@ def draw_status_box(screen, forest):
     screen.blit(text1, (10, 10))
     screen.blit(text2, (10, 50))
     screen.blit(text3, (10, 90))
+    # if the game is over, you display "Game over" text in the status box
+    if game_over:
+        current_time = pygame.time.get_ticks()
+        # blinking time is 500ms
+        if (current_time // 500) % 2 == 0:
+            text4 = font.render("Game Over", True, RED)
+            screen.blit(text4, (30, 130))
+
 
 
 # Load and scale the background
@@ -210,11 +219,76 @@ background_img = pygame.image.load(asset_path("background.jpg")).convert()
 background_img = pygame.transform.scale(background_img, (WIDTH, HEIGHT))
 
 
-def main():
-    tree_count = get_tree_count()
-    forest = generate_forest(tree_count)
+def game_over_screen(screen, saved_count, forest=None):
     clock = pygame.time.Clock()
     running = True
+
+    # Create buttons
+    button_font = pygame.font.Font(FONT_PATH, 30)
+    exit_button = Button(
+        pos=(WIDTH//2, HEIGHT//2 + 60),
+        text_input="EXIT",
+        font=button_font,
+        base_color=WHITE,
+        hovering_color=RED
+    )
+    replay_button = Button(
+        pos=(WIDTH//2, HEIGHT//2),
+        text_input="REPLAY",
+        font=button_font,
+        base_color=WHITE,
+        hovering_color=GREEN
+    )
+    new_game_button = Button(
+        pos=(WIDTH//2, HEIGHT//2 - 60),
+        text_input="NEW GAME",
+        font=button_font,
+        base_color=WHITE,
+        hovering_color=GREEN
+    )
+
+    while running:
+        screen.fill(BLACK)  # soon, background
+
+        text1 = font.render("Game Over!", True, WHITE)
+        text2 = font.render(f"You saved {saved_count} trees.", True, WHITE)
+        # text3 = font.render("Press ESC to quit or ENTER to play again.", True, WHITE)
+        screen.blit(text1, text1.get_rect(center=(WIDTH//2, HEIGHT//2 - 1500)))
+        screen.blit(text2, text2.get_rect(center=(WIDTH//2, HEIGHT//2-100)))
+
+        # Get mouse position
+        mouse_pos = pygame.mouse.get_pos()
+
+        # Update and draw buttons
+        for button in [new_game_button, replay_button, exit_button]:
+            button.changeColor(mouse_pos)
+            button.update(screen)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if exit_button.checkForInput(mouse_pos):
+                    pygame.quit()
+                    sys.exit()
+                elif replay_button.checkForInput(mouse_pos):
+                    return "replay"  # Signal to replay with same forest
+                elif new_game_button.checkForInput(mouse_pos):
+                    return "new"  # Signal to start new game
+
+        pygame.display.flip()
+        clock.tick(30)
+
+
+def main():
+    tree_count = get_tree_count()
+    forest, initial_burning_tree = generate_forest(tree_count)
+    clock = pygame.time.Clock()
+    running = True
+
+    game_over = False
+    game_over_time = None
 
     while running:
         screen.blit(background_img, (0, 0))
@@ -224,18 +298,40 @@ def main():
                 running = False
                 pygame.quit()
                 sys.exit()
-            elif event.type == pygame.MOUSEBUTTONDOWN:
+            elif event.type == pygame.MOUSEBUTTONDOWN and not game_over:
                 for tree in forest:
                     if tree.is_clicked(pygame.mouse.get_pos()):
                         tree.protect()
                         next_turn(forest)
+        
+        if not game_over and all(all(n.color != BLACK for n in tree.neighbors) for tree in forest if tree.color == RED):
+            game_over = True
+            game_over_time = pygame.time.get_ticks()
+
+        # If game is over and 3 seconds have passed, show game over screen
+        if game_over and pygame.time.get_ticks() - game_over_time > 2500:
+            saved_count = sum(tree.color != RED for tree in forest)
+            action = game_over_screen(screen, saved_count, forest)
+
+            if action == "replay":
+                    # Reset the same forest
+                    for tree in forest:
+                        tree.color = BLACK
+                    # Set a random burning tree with degree > 1
+                    initial_burning_tree.color = RED 
+                    game_over = False
+                    game_over_time = None
+                    continue
+            elif action == "new":
+                break  # Will restart outer loop with new forest
 
         hovered_tree = None
-        mouse_pos = pygame.mouse.get_pos()
-        for tree in forest:
-            if tree.is_hovered(mouse_pos):
-                hovered_tree = tree
-                break
+        if not game_over:
+            mouse_pos = pygame.mouse.get_pos()
+            for tree in forest:
+                if tree.is_hovered(mouse_pos):
+                    hovered_tree = tree
+                    break
 
         for i, tree in enumerate(forest):
             for neighbor in tree.neighbors:
@@ -243,7 +339,7 @@ def main():
                     start_pos = (tree.x + 40, tree.y + 95)
                     end_pos = (neighbor.x + 40, neighbor.y + 50)
 
-                    if hovered_tree and (tree == hovered_tree or neighbor == hovered_tree):
+                    if not game_over and hovered_tree and (tree == hovered_tree or neighbor == hovered_tree):
                         draw_rocky_path(screen, start_pos, end_pos, rock_highlighted)
                     else:
                         draw_rocky_path(screen, start_pos, end_pos, rock_image)
@@ -252,16 +348,13 @@ def main():
         for tree in forest:
             tree.draw(screen)
 
-        draw_status_box(screen, forest)
+        draw_status_box(screen, forest, game_over)
 
         pygame.display.flip()
         clock.tick(60)
 
-        if all(all(n.color != BLACK for n in tree.neighbors) for tree in forest if tree.color == RED):
-            print("Game over! All neighbors of burning trees are either burning or protected.")
-            saved = sum(tree.color != RED for tree in forest)
-            print(f"You saved {saved} trees.")
-            running = False
+
+
 
 if __name__ == "__main__":
     main()
