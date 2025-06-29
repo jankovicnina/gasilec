@@ -230,32 +230,35 @@ def draw_text_with_typing_effect(screen, text, font, color, x, y, delay=50):
 # Load and scale the background
 background_img = pygame.image.load(asset_path("background.jpg")).convert()
 background_img = pygame.transform.scale(background_img, (WIDTH, HEIGHT))
+fire_main_img = pygame.image.load(asset_path("main_background_fire.jpg")).convert()
+fire_main_img = pygame.transform.scale(fire_main_img, (WIDTH, HEIGHT))
+no_fire_main_img = pygame.image.load(asset_path("main_bacground_notfire.jpg")).convert()
+no_fire_main_img = pygame.transform.scale(no_fire_main_img, (WIDTH, HEIGHT))
 
 
 def main_menu():
     # global screen, background, SCREEN_WIDTH, SCREEN_HEIGHT
     
-    pygame.display.set_caption("Gasilec")
+    pygame.display.set_caption("Main Menu")
 
     while True:
-        # screen.blit(background, (0, 0))
-        screen.fill(WHITE)
+        screen.blit(fire_main_img, (0, 0))
         mouse_pos = pygame.mouse.get_pos()
 
-        zacetno_besedilo = font.render('Gasilec', False, BLACK)
-        zacetni_rect = zacetno_besedilo.get_rect(center=(WIDTH // 2, 100))
+        base_text = pygame.image.load(asset_path("firefighter_txt.png")).convert_alpha()  # Use convert_alpha for transparency
+        scale_factor = 1.5  # Increase this to make it bigger (e.g., 2.0 for 2x size)
+        base_text = pygame.transform.scale(
+            base_text,
+            (int(base_text.get_width() * scale_factor), 
+            int(base_text.get_height() * scale_factor)
+        ))
+        base_rect = base_text.get_rect(center=(WIDTH // 2, 100))
 
-        # igraj_gumb = Button(image=pygame.image.load(path("Rect.png")), hovering_image=pygame.image.load(path("Rect1.png")),
-        #                     pos=(SCREEN_WIDTH // 2, SCREEN_HEIGHT * 0.4), text_input="PLAY", font=TEST_FONT, base_color=BLACK, hovering_color=WHITE)
-        # navodila_gumb = Button(image=pygame.image.load(path("Rect.png")), hovering_image=pygame.image.load(path("Rect1.png")),
-        #                        pos=(SCREEN_WIDTH // 2, SCREEN_HEIGHT * 0.6), text_input="HOW TO PLAY", font=TEST_FONT, base_color=BLACK, hovering_color=WHITE)
-        # izhod_gumb = Button(image=pygame.image.load(path("Rect.png")), hovering_image=pygame.image.load(path("Rect1.png")),
-        #                     pos=(SCREEN_WIDTH // 2, SCREEN_HEIGHT * 0.8), text_input="EXIT", font=TEST_FONT, base_color=BLACK, hovering_color=WHITE)
-        play_button = Button(pos=(WIDTH // 2, HEIGHT * 0.4), text_input="PLAY", font=font, base_color=BLACK, hovering_color=WHITE)
-        tutorial_button = Button(pos=(WIDTH // 2, HEIGHT * 0.6), text_input="HOW TO PLAY", font=font, base_color=BLACK, hovering_color=WHITE)
-        quit_button = Button(pos=(WIDTH // 2, HEIGHT * 0.8), text_input="EXIT", font=font, base_color=BLACK, hovering_color=WHITE)
+        play_button = Button(image=pygame.image.load(asset_path("play.png")), hovering_image=pygame.image.load(asset_path("play_hover.png")),pos=(WIDTH // 2, HEIGHT * 0.4))
+        tutorial_button = Button(image=pygame.image.load(asset_path("tutorial.png")), hovering_image=pygame.image.load(asset_path("tutorial_hover.png")), pos=(WIDTH // 2, HEIGHT * 0.6))
+        quit_button = Button(image=pygame.image.load(asset_path("quit.png")), hovering_image=pygame.image.load(asset_path("quit_hover.png")), pos=(WIDTH // 2, HEIGHT * 0.8))
 
-        screen.blit(zacetno_besedilo, zacetni_rect)
+        screen.blit(base_text, base_rect)
 
         for button in [play_button, tutorial_button, quit_button]:
             button.changeColor(mouse_pos)
@@ -269,7 +272,8 @@ def main_menu():
                 if play_button.checkForInput(mouse_pos):
                     play()
                 if tutorial_button.checkForInput(mouse_pos):
-                    tutorial()
+                    # tutorial()
+                    game_over_screen(screen, 5, 8)
                 if quit_button.checkForInput(mouse_pos):
                     pygame.quit()
                     exit()
@@ -289,7 +293,9 @@ def tutorial():
         "See those rocky paths? Fire spreads ONLY along them!",
         "Hover over trees to see connections. Click to PROTECT one!",
         "Good! Protected trees (blue aura) won't burn. Watch the fire spread...",
-        "Now try saving more trees before time runs out! Ready?"
+        "The game ends when the fire can't spread further.",  # New line
+        "You'll see how many trees you saved!",
+        "Now try saving more trees before the forest is engulfed! Ready?"
     ]
 
     typed_text = ""
@@ -298,21 +304,25 @@ def tutorial():
     typing_start_time = 0
     player_protected = False  # Track if player protected a tree
 
-    # Button
-    next_button = Button(
-        pos=(WIDTH // 2, HEIGHT - 50),
-        text_input="NEXT",
-        font=pygame.font.Font(FONT_PATH, 30),
-        base_color=BLACK,
-        hovering_color=GREEN
+    # Firefighter image
+    firefighter_img = pygame.image.load(asset_path("firefighter.png")).convert_alpha()
+    firefighter_img = pygame.transform.scale(firefighter_img, (132, 252))
+    firefighter_rect = firefighter_img.get_rect(bottomleft=(50, HEIGHT-50))
+
+
+    # Button 
+    next_button = Button(image=pygame.image.load(asset_path("next.png")), 
+        hovering_image=pygame.image.load(asset_path("next_hover.png")),
+        pos=(WIDTH // 2, HEIGHT - 50)
     )
+
 
     # Mini forest setup (4 trees in a square)
     mini_trees = [
-        Tree(x=3* WIDTH/4 - 300, y=HEIGHT/2 + 100),  # Top-left
-        Tree(x=3* WIDTH / 4 + 100, y=HEIGHT/2 + 100),  # Top-right
-        Tree(x=3* WIDTH / 4 - 300, y=HEIGHT/2 - 100),  # Bottom-left
-        Tree(x=3* WIDTH / 4 + 100, y=HEIGHT/2 - 100)   # Bottom-right
+        Tree(x=int(WIDTH*0.6), y=int(HEIGHT*0.2)),  # Was 0.4 (moved up)
+        Tree(x=int(WIDTH*0.8), y=int(HEIGHT*0.2)),  # Was 0.4 (moved up)
+        Tree(x=int(WIDTH*0.6), y=int(HEIGHT*0.5)),  # Was 0.6 (moved up)
+        Tree(x=int(WIDTH*0.8), y=int(HEIGHT*0.5))   # Was 0.6 (moved up)
     ]
     
     # Set up connections
@@ -327,11 +337,25 @@ def tutorial():
 
     while running:
         screen.blit(background_img, (0, 0))
+
+        screen.blit(firefighter_img, firefighter_rect)
         
         # Speech bubble
-        bubble_rect = pygame.Rect(50, 50, WIDTH - 300, 150)
-        pygame.draw.rect(screen, WHITE, bubble_rect, border_radius=20)
-        pygame.draw.rect(screen, BLACK, bubble_rect, 2, border_radius=20)
+        bubble_img = pygame.image.load(asset_path("bubble.png")).convert_alpha()
+        bubble_x = firefighter_rect.left + 50
+        bubble_y = firefighter_rect.top - 120
+        bubble_rect = pygame.Rect(bubble_x, bubble_y, 550, 70)
+
+        screen.blit(bubble_img, bubble_rect)
+
+        # Button handling
+        show_button = (typing_complete and current_line < len(dialogue) 
+                      and not (current_line == 2 and not player_protected))
+
+        if show_button:
+            next_button.changeColor(mouse_pos)
+            next_button.update(screen)
+
 
         # Draw connections
         for i, tree in enumerate(mini_trees):
@@ -400,7 +424,7 @@ def tutorial():
         # Render text
         font = pygame.font.Font(FONT_PATH, 24)
         text_surface = font.render(typed_text, True, BLACK)
-        screen.blit(text_surface, (bubble_rect.x + 20, bubble_rect.y + 20))
+        screen.blit(text_surface, (bubble_rect.x + 25, bubble_rect.y + 25))
 
         # Show button when appropriate
         show_button = (typing_complete and current_line < len(dialogue) 
@@ -427,42 +451,58 @@ def tutorial():
         clock.tick(60)
 
 
-def game_over_screen(screen, saved_count, forest=None):
+def game_over_screen(screen, saved_count, tree_count, forest=None):
     clock = pygame.time.Clock()
     running = True
 
-    # Create buttons
-    button_font = pygame.font.Font(FONT_PATH, 30)
+    # Load button images at half size
+    def load_half_size(image_path):
+        img = pygame.image.load(asset_path(image_path)).convert_alpha()
+        return pygame.transform.scale(img, (img.get_width() // 2, img.get_height() // 2))
+
+    # Create buttons (half size)
     exit_button = Button(
-        pos=(WIDTH//2, HEIGHT//2 + 60),
-        text_input="EXIT",
-        font=button_font,
-        base_color=WHITE,
-        hovering_color=RED
+        image=load_half_size("quit.png"), 
+        hovering_image=load_half_size("quit_hover.png"),
+        pos=(3 * WIDTH//4 + 65, HEIGHT//2 + 120)
     )
     replay_button = Button(
-        pos=(WIDTH//2, HEIGHT//2),
-        text_input="REPLAY",
-        font=button_font,
-        base_color=WHITE,
-        hovering_color=GREEN
+        image=load_half_size("replay.png"), 
+        hovering_image=load_half_size("replay_hover.png"),
+        pos=(3 * WIDTH//4 + 65, HEIGHT//2 + 60)
     )
     new_game_button = Button(
-        pos=(WIDTH//2, HEIGHT//2 - 60),
-        text_input="NEW GAME",
-        font=button_font,
-        base_color=WHITE,
-        hovering_color=GREEN
+        image=load_half_size("new_game.png"), 
+        hovering_image=load_half_size("new_game_hover.png"),
+        pos=(3 * WIDTH//4 + 65, HEIGHT//2 )
     )
 
-    while running:
-        screen.fill(BLACK)  # soon, background
+    # Loading the images for the background
+    trophy_img = pygame.image.load(asset_path("firefighter_trophy.png")).convert_alpha()
+    trophy_img = pygame.transform.scale(trophy_img, (trophy_img.get_width() * 2, trophy_img.get_height() * 2))  # Optional scaling
+    trophy_rect = trophy_img.get_rect(bottomleft=(250, HEIGHT - 100))
 
-        text1 = font.render("Game Over!", True, WHITE)
-        text2 = font.render(f"You saved {saved_count} trees.", True, WHITE)
-        # text3 = font.render("Press ESC to quit or ENTER to play again.", True, WHITE)
-        screen.blit(text1, text1.get_rect(center=(WIDTH//2, HEIGHT//2 - 1500)))
-        screen.blit(text2, text2.get_rect(center=(WIDTH//2, HEIGHT//2-100)))
+    bubble_img = pygame.image.load(asset_path("bubble2.png")).convert_alpha()
+    bubble_rect = bubble_img.get_rect(bottomleft=(100, HEIGHT//2 - 100  ))
+
+    board_img = pygame.image.load(asset_path("board.png")).convert_alpha()
+    board_rect = board_img.get_rect(topleft=(WIDTH // 2 - 50, HEIGHT//2 - 100))
+
+    while running:
+        # Draw the background(s)
+        screen.blit(no_fire_main_img, (0, 0))
+        screen.blit(trophy_img, trophy_rect)
+        screen.blit(bubble_img, bubble_rect)
+        screen.blit(board_img, board_rect)
+
+        lines = ["After-action report:",
+                f"- Trees saved: {saved_count}",
+                f"- Efficiency: {100 * saved_count / tree_count}%",
+                "Debrief when ready."]
+        
+        for i, line in enumerate(lines):
+            text = font.render(line, True, BLACK)
+            screen.blit(text, (WIDTH // 2 - 40 + 20, HEIGHT//2 - 25 + i*45))
 
         # Get mouse position
         mouse_pos = pygame.mouse.get_pos()
@@ -481,9 +521,9 @@ def game_over_screen(screen, saved_count, forest=None):
                     pygame.quit()
                     sys.exit()
                 elif replay_button.checkForInput(mouse_pos):
-                    return "replay"  # Signal to replay with same forest
+                    return "replay"
                 elif new_game_button.checkForInput(mouse_pos):
-                    return "new"  # Signal to start new game
+                    return "new"
 
         pygame.display.flip()
         clock.tick(30)
@@ -520,7 +560,7 @@ def play():
             # If game is over and 3 seconds have passed, show game over screen
             if game_over and pygame.time.get_ticks() - game_over_time > 2500:
                 saved_count = sum(tree.color != RED for tree in forest)
-                action = game_over_screen(screen, saved_count, forest)
+                action = game_over_screen(screen, saved_count, tree_count, forest)
 
                 if action == "replay":
                         # Reset the same forest
