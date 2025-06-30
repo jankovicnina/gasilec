@@ -16,15 +16,43 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN | pygame.HWS
 pygame.display.set_caption("Firefighter")
 clock = pygame.time.Clock()
 
-
 # Colors
 WHITE = (255, 255, 255)
 GREEN = (0, 255, 0)
 RED = (255, 0, 0)
 BLACK = (0, 0, 0)
-GRAY = (200, 200, 200)
+
+
+def asset_path(name):
+    
+    """
+    Helper function to get full asset path
+    """
+
+    return os.path.join("Slike_in_fonti", name)
+
+
+# Font setup
+FONT_PATH = asset_path("Pixeltype.ttf")
+font = pygame.font.Font(FONT_PATH, 40)
+
+# Load assets
+rock_image = pygame.image.load(asset_path("rock.png")).convert_alpha()
+rock_highlighted = pygame.image.load(asset_path("rock_highlighted.png")).convert_alpha()
+background_img = pygame.image.load(asset_path("background.jpg")).convert()
+background_img = pygame.transform.scale(background_img, (WIDTH, HEIGHT))
+fire_main_img = pygame.image.load(asset_path("main_background_fire.jpg")).convert()
+fire_main_img = pygame.transform.scale(fire_main_img, (WIDTH, HEIGHT))
+no_fire_main_img = pygame.image.load(asset_path("main_bacground_notfire.jpg")).convert()
+no_fire_main_img = pygame.transform.scale(no_fire_main_img, (WIDTH, HEIGHT))
+
 
 def draw_rocky_path(screen, start_pos, end_pos, rock_img, spacing=16):
+
+    """
+    Draws a path between two points using rock images
+    """
+
     dx = end_pos[0] - start_pos[0]
     dy = end_pos[1] - start_pos[1]
     distance = math.hypot(dx, dy)
@@ -34,34 +62,18 @@ def draw_rocky_path(screen, start_pos, end_pos, rock_img, spacing=16):
         t = i / steps
         x = int(start_pos[0] + t * dx)
         y = int(start_pos[1] + t * dy)
-
         rect = rock_img.get_rect(center=(x, y))
         screen.blit(rock_img, rect)
 
 
-def asset_path(name):
-    return os.path.join("Slike_in_fonti", name)
-
-# Fonts
-FONT_PATH = asset_path("Pixeltype.ttf")
-font = pygame.font.Font(FONT_PATH, 40)
-
-#rocks
-rock_image = pygame.image.load(asset_path("rock.png")).convert_alpha()
-rock_highlighted = pygame.image.load(asset_path("rock_highlighted.png")).convert_alpha()
-
-# Load and scale the background
-background_img = pygame.image.load(asset_path("background.jpg")).convert()
-background_img = pygame.transform.scale(background_img, (WIDTH, HEIGHT))
-fire_main_img = pygame.image.load(asset_path("main_background_fire.jpg")).convert()
-fire_main_img = pygame.transform.scale(fire_main_img, (WIDTH, HEIGHT))
-no_fire_main_img = pygame.image.load(asset_path("main_bacground_notfire.jpg")).convert()
-no_fire_main_img = pygame.transform.scale(no_fire_main_img, (WIDTH, HEIGHT))
-
 def get_tree_count():
+
+    """
+    Gets number of trees from player input (3-20)
+    """
+
     running = True
     input_text = ""
-    clock = pygame.time.Clock()
     error = ""
 
     while running:
@@ -77,78 +89,96 @@ def get_tree_count():
                             count = int(input_text)
                             if 3 <= count <= 20:
                                 return count
-                            else:
-                                error = "Input an integer between 3 and 20."
+                            error = "Input an integer between 3 and 20."
                         except ValueError:
                             error = "Input an integer between 3 and 20."
-                    else:
-                        error = "Input an integer between 3 and 20."
                 elif event.key == pygame.K_BACKSPACE:
                     input_text = input_text[:-1]
                 elif event.key in range(pygame.K_0, pygame.K_9 + 1):
                     input_text += event.unicode
 
-        screen_width, screen_height = pygame.display.get_surface().get_size()
+        # Draw input UI
         text_surface = font.render("Number of trees:", True, BLACK)
-        text_rect = text_surface.get_rect(center=(screen_width // 2, screen_height // 2 - 25))
+        text_rect = text_surface.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 25))
         screen.blit(text_surface, text_rect)
 
-        input_box = pygame.Rect(screen_width // 2 - 100, screen_height // 2 + 25, 200, 50)
+        input_box = pygame.Rect(WIDTH // 2 - 100, HEIGHT // 2 + 25, 200, 50)
         pygame.draw.rect(screen, BLACK, input_box, 2)
         input_surface = font.render(input_text, True, BLACK)
         screen.blit(input_surface, (input_box.x + 98, input_box.y + 18))
 
         if error:
             error_surface = font.render(error, True, RED)
-            error_rect = error_surface.get_rect(center=(screen_width // 2, screen_height // 2 + 100))
+            error_rect = error_surface.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 100))
             screen.blit(error_surface, error_rect)
 
         pygame.display.flip()
         clock.tick(30)
 
+
 def generate_forest(tree_count):
+
+    """
+    Generates a forest with given number of trees using networkx graph
+    """
+
     graph = nx.barabasi_albert_graph(tree_count, 1)
     forest = []
-    screen_width, screen_height = pygame.display.get_surface().get_size()
+    
+    # Use spring layout for better node distribution
+    layout = nx.spring_layout(graph, k=15/math.sqrt(tree_count), iterations=100)
+    
+    # Define boundaries
+    screen_rect = pygame.Rect(0, 0, WIDTH, HEIGHT)
+    avoid_rect = pygame.Rect(0, 0, 220, 160)  # Status board area
+    min_distance = 80  # Minimum distance between trees
+    tree_size = 80  # Approximate size of tree sprites
 
-    # Layout with tighter clustering
-    layout = nx.kamada_kawai_layout(graph)
 
-    avoid_rect = pygame.Rect(0, 0, 220, 110)
-    min_distance = math.hypot(80, 100) + 10  # ≈ 130 pixels
+    def is_valid_position(x, y):
 
-    def is_far_enough(x, y):
+        """
+        Check if position is valid (not in avoid area and not too close to others)
+        """
+
+        # Check screen boundaries
+        if (x < avoid_rect.width + 20 or 
+            x > WIDTH - tree_size - 20 or
+            y < 20 or 
+            y > HEIGHT - tree_size - 20):
+            return False
+            
+        # Check proximity to other trees
         for tree in forest:
-            dx = (tree.x + 40) - (x + 40)
-            dy = (tree.y + 50) - (y + 50)
-            if math.hypot(dx, dy) < min_distance:
+            if math.hypot(tree.x - x, tree.y - y) < min_distance:
                 return False
         return True
+    
 
-    # Normalize positions to screen
-    padding_x, padding_y = 100, 100  # Keep some space from screen edges
+    # Place trees on screen
     for i in range(tree_count):
         pos = layout[i]
-        x = int(padding_x + (pos[0] + 1) / 2 * (screen_width - 2 * padding_x - 80))
-        y = int(padding_y + (pos[1] + 1) / 2 * (screen_height - 2 * padding_y - 100))
 
-        # Retry if too close to other trees or the status box
+        # Map layout coordinates to safe screen area
+        safe_width = WIDTH - avoid_rect.width - 100 - tree_size
+        safe_height = HEIGHT - 100 - tree_size
+        x = int(avoid_rect.width + 100 + pos[0] * safe_width)
+        y = int(100 + (pos[1] + 1) / 2 * safe_height)
+
+        # Ensure valid position
         attempts = 0
-        while avoid_rect.collidepoint(x + 20, y + 40) or not is_far_enough(x, y):
-            x = random.randint(padding_x, screen_width - padding_x - 80)
-            y = random.randint(padding_y, screen_height - padding_y - 100)
+        while not is_valid_position(x, y) and attempts < 100:
+            x = random.randint(avoid_rect.width + 100, WIDTH - tree_size - 100)
+            y = random.randint(100, HEIGHT - tree_size - 100)
             attempts += 1
-            if attempts > 500:
-                break  # Prevent infinite loop
 
-        tree = Tree(x, y)
-        forest.append(tree)
+        forest.append(Tree(x, y))
 
-    # Assign neighbors
+    # Assign neighbors from graph
     for i, tree in enumerate(forest):
         tree.neighbors = [forest[n] for n in graph.neighbors(i)]
 
-    # Set a random burning tree with degree > 1
+    # Set initial burning tree (prefer trees with multiple connections)
     candidates = [tree for tree in forest if len(tree.neighbors) > 1]
     initial_burning_tree = random.choice(candidates) if candidates else random.choice(forest)
     initial_burning_tree.color = RED
@@ -156,18 +186,46 @@ def generate_forest(tree_count):
     return forest, initial_burning_tree
 
 
-
-def get_burning_trees(forest):
-    return [tree for tree in forest if tree.color == RED]
-
 def next_turn(forest):
-    burning = get_burning_trees(forest)
-    for tree in burning:
+
+    """
+    Advances the game state by spreading fire to unprotected neighbors
+    """
+
+    for tree in [t for t in forest if t.color == RED]:
         for neighbor in tree.neighbors:
             if neighbor.color == BLACK:
                 neighbor.catch_fire()
 
+
+def count_saved_trees(forest):
+
+    """
+    Counts trees that are either protected or unreachable by fire
+    """
+
+    saved = 0
+    for tree in forest:
+        if tree.color == GREEN:
+            saved += 1
+        elif tree.color == BLACK:
+            # Check if any burning tree can reach this one
+            reachable = any(
+                burning_tree.color == RED and 
+                is_reachable(burning_tree, tree, set()) 
+                for burning_tree in forest
+            )
+            if not reachable:
+                saved += 1
+    return saved
+
+
 def is_reachable(current, target, visited):
+    
+    """
+    Recursive helper to check fire path between trees
+    """
+
     if current == target:
         return True
     visited.add(current)
@@ -177,70 +235,40 @@ def is_reachable(current, target, visited):
                 return True
     return False
 
-def count_saved_trees(forest):
-    saved = 0
-    for tree in forest:
-        if tree.color == GREEN:
-            saved += 1
-        elif tree.color == BLACK:
-            # Check if all burning trees can't reach this one
-            reachable = False
-            for burning_tree in forest:
-                if burning_tree.color == RED and is_reachable(burning_tree, tree, set()):
-                    reachable = True
-                    break
-            if not reachable:
-                saved += 1
-    return saved
-
-
 
 def draw_status_box(screen, forest, game_over):
-    # Load and scale the board image
+
+    """
+    Draws the game status board with stats
+    """
+
     board_img = pygame.image.load(asset_path("board1.png")).convert_alpha()
     board_img = pygame.transform.scale(board_img, (200, 200))
     screen.blit(board_img, (0, 0))
 
-    # Get metrics
-    box_width, box_height = 200, 160
-    burning = sum(tree.color == RED for tree in forest)
-    protected = sum(tree.color == GREEN for tree in forest)
-    saved = count_saved_trees(forest)
-
-    # Helper function to center text with customizable color
-    def center_text(text, y_offset, color=BLACK):  # Default color is black
+    # Helper function to center text
+    def center_text(text, y_offset, color=BLACK):
         text_surface = font.render(text, True, color)
-        text_rect = text_surface.get_rect(center=(box_width//2, y_offset))
+        text_rect = text_surface.get_rect(center=(100, y_offset))
         screen.blit(text_surface, text_rect)
 
-    # Draw centered text (all black)
-    center_text(f"Burning: {burning}", 35)
-    center_text(f"Protected: {protected}", 75)
-    center_text(f"Saved: {saved}", 115)
+    # Display stats
+    center_text(f"Burning: {sum(t.color == RED for t in forest)}", 35)
+    center_text(f"Protected: {sum(t.color == GREEN for t in forest)}", 75)
+    center_text(f"Saved: {count_saved_trees(forest)}", 115)
     
-    # Centered blinking "Game Over" text (white)
-    if game_over:
-        current_time = pygame.time.get_ticks()
-        if (current_time // 500) % 2 == 0:
-            center_text("GAME OVER", 145, WHITE)  # Explicitly set to white
-
-
-def draw_text_with_typing_effect(screen, text, font, color, x, y, delay=50):
-    typed_text = ""
-    for i, char in enumerate(text):
-        typed_text += char
-        text_surface = font.render(typed_text, True, color)
-        # Clear speech bubble area (or redraw it)
-        pygame.draw.rect(screen, WHITE, (x, y, WIDTH - 200, 100))  # Temp bubble
-        screen.blit(text_surface, (x + 20, y + 20))  # Offset inside bubble
-        pygame.display.flip()
-        pygame.time.delay(delay)  # Controls speed
-    return typed_text
+    # Blinking game over text
+    if game_over and (pygame.time.get_ticks() // 500) % 2 == 0:
+        center_text("GAME OVER", 150, WHITE)
 
 
 def get_funny_remark(saved_count, tree_count):
+
+    """
+    Returns humorous remark based on player's performance
+    """
+
     efficiency = int(100 * saved_count / tree_count)
-    
     remarks = [
         (0, "*spits* Let's go again."),
         (10, f"That's {saved_count} less trees to replant."),
@@ -261,12 +289,32 @@ def get_funny_remark(saved_count, tree_count):
 
 
 
-def main_menu():    
-    pygame.display.set_caption("Main Menu")
+def main_menu(): 
+
+    """
+    Main menu screen with play/tutorial/quit options
+    """
 
     while True:
         screen.blit(fire_main_img, (0, 0))
         mouse_pos = pygame.mouse.get_pos()
+
+        play_button = Button(
+            image=pygame.image.load(asset_path("play.png")), 
+            hovering_image=pygame.image.load(asset_path("play_hover.png")),
+            pos=(WIDTH // 2, HEIGHT * 0.4)
+            )
+        tutorial_button = Button(
+            image=pygame.image.load(asset_path("tutorial.png")), 
+            hovering_image=pygame.image.load(asset_path("tutorial_hover.png")), 
+            pos=(WIDTH // 2, HEIGHT * 0.6)
+            )
+        quit_button = Button(
+            image=pygame.image.load(asset_path("quit.png")), 
+            hovering_image=pygame.image.load(asset_path("quit_hover.png")), 
+            pos=(WIDTH // 2, HEIGHT * 0.8)
+            )
+
 
         base_text = pygame.image.load(asset_path("firefighter_txt.png")).convert_alpha()  # Use convert_alpha for transparency
         scale_factor = 1.5  # Increase this to make it bigger (e.g., 2.0 for 2x size)
@@ -277,9 +325,6 @@ def main_menu():
         ))
         base_rect = base_text.get_rect(center=(WIDTH // 2, 100))
 
-        play_button = Button(image=pygame.image.load(asset_path("play.png")), hovering_image=pygame.image.load(asset_path("play_hover.png")),pos=(WIDTH // 2, HEIGHT * 0.4))
-        tutorial_button = Button(image=pygame.image.load(asset_path("tutorial.png")), hovering_image=pygame.image.load(asset_path("tutorial_hover.png")), pos=(WIDTH // 2, HEIGHT * 0.6))
-        quit_button = Button(image=pygame.image.load(asset_path("quit.png")), hovering_image=pygame.image.load(asset_path("quit_hover.png")), pos=(WIDTH // 2, HEIGHT * 0.8))
 
         screen.blit(base_text, base_rect)
 
@@ -305,9 +350,13 @@ def main_menu():
 
 
 
-
-
 def tutorial():
+
+    """
+    Interactive tutorial that teaches the game mechanics through step-by-step instructions
+    and a mini forest demonstration with visual feedback.
+    """
+
     clock = pygame.time.Clock()
     running = True
     current_line = 0
@@ -410,14 +459,38 @@ def tutorial():
                     sys.exit()
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     for tree in mini_trees:
-                        if tree.is_clicked(mouse_pos) and tree.color == (0, 0, 0):
+                        if tree.is_clicked(mouse_pos) and tree.color == BLACK:
                             tree.protect()
                             player_protected = True
-                            current_line += 1  # Move to next explanation
-                            typing_complete = False
+                            tree_protected = True
+                            break
+                        
+                    if tree_protected:
+                        # Immediate visual update
+                        screen.blit(background_img, (0, 0))
+                        screen.blit(firefighter_img, firefighter_rect)
+                        screen.blit(bubble_img, bubble_rect)
+
+                        for i, tree in enumerate(mini_trees):
+                            for neighbor in tree.neighbors:
+                                if i < mini_trees.index(neighbor):
+                                    start_pos = (tree.x + 40, tree.y + 50)
+                                    end_pos = (neighbor.x + 40, neighbor.y + 50)
+                                    draw_rocky_path(screen, start_pos, end_pos, rock_image)
+                        
+                        for tree in mini_trees:
+                            tree.draw(screen)
+                            
+                        # Update display
+                        pygame.display.flip()
+                        
+                        # Auto-advance after showing protection
+                        pygame.time.delay(800)  # Let player see the protection
+                        current_line += 1
+                        typing_complete = False
 
         # Auto-advance after fire spread demonstration
-        elif typing_complete and current_line == 3 and not any(t.color == (0, 0, 0) for t in mini_trees[2].neighbors):
+        elif typing_complete and current_line == 3 and not any(t.color == BLACK for t in mini_trees[2].neighbors):
             pygame.time.delay(1500)  # Let player observe
             current_line += 1
             typing_complete = False
@@ -444,7 +517,7 @@ def tutorial():
                 # Auto-spread fire after protection explanation
                 if current_line == 3:
                     for neighbor in mini_trees[2].neighbors:
-                        if neighbor.color == (0, 0, 0):
+                        if neighbor.color == BLACK:
                             neighbor.catch_fire()
 
         # Render text
@@ -485,7 +558,14 @@ def tutorial():
         clock.tick(60)
 
 
+
 def game_over_screen(screen, saved_count, tree_count, forest=None):
+
+    """
+    Displays the game over screen with statistics and options to replay or start a new game.
+    Shows saved tree count, efficiency percentage, and a humorous remark based on performance.
+    """
+
     clock = pygame.time.Clock()
     running = True
 
@@ -611,6 +691,16 @@ def game_over_screen(screen, saved_count, tree_count, forest=None):
 
 
 def play():
+
+    """
+    Main game loop that handles the core gameplay:
+    - Gets tree count from player
+    - Generates and manages the forest
+    - Handles player interactions (tree protection)
+    - Controls fire spread and game state
+    - Triggers game over when appropriate
+    """
+
     while True:
         tree_count = get_tree_count()
         forest, initial_burning_tree = generate_forest(tree_count)
@@ -674,7 +764,6 @@ def play():
                         else:
                             draw_rocky_path(screen, start_pos, end_pos, rock_image)
 
-            status_box_width = 200
             for tree in forest:
                 tree.draw(screen)
 
@@ -682,8 +771,6 @@ def play():
 
             pygame.display.flip()
             clock.tick(60)
-
-
 
 
 
