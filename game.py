@@ -50,7 +50,13 @@ font = pygame.font.Font(FONT_PATH, 40)
 rock_image = pygame.image.load(asset_path("rock.png")).convert_alpha()
 rock_highlighted = pygame.image.load(asset_path("rock_highlighted.png")).convert_alpha()
 
-
+# Load and scale the background
+background_img = pygame.image.load(asset_path("background.jpg")).convert()
+background_img = pygame.transform.scale(background_img, (WIDTH, HEIGHT))
+fire_main_img = pygame.image.load(asset_path("main_background_fire.jpg")).convert()
+fire_main_img = pygame.transform.scale(fire_main_img, (WIDTH, HEIGHT))
+no_fire_main_img = pygame.image.load(asset_path("main_bacground_notfire.jpg")).convert()
+no_fire_main_img = pygame.transform.scale(no_fire_main_img, (WIDTH, HEIGHT))
 
 def get_tree_count():
     running = True
@@ -59,7 +65,7 @@ def get_tree_count():
     error = ""
 
     while running:
-        screen.fill(WHITE)
+        screen.blit(background_img, (0, 0))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -190,27 +196,33 @@ def count_saved_trees(forest):
 
 
 def draw_status_box(screen, forest, game_over):
-    box_width, box_height = 200, 160
-    pygame.draw.rect(screen, GRAY, (0, 0, box_width, box_height))
+    # Load and scale the board image
+    board_img = pygame.image.load(asset_path("board1.png")).convert_alpha()
+    board_img = pygame.transform.scale(board_img, (200, 200))
+    screen.blit(board_img, (0, 0))
 
+    # Get metrics
+    box_width, box_height = 200, 160
     burning = sum(tree.color == RED for tree in forest)
     protected = sum(tree.color == GREEN for tree in forest)
     saved = count_saved_trees(forest)
 
-    text1 = font.render(f"Burning: {burning}", True, BLACK)
-    text2 = font.render(f"Protected: {protected}", True, BLACK)
-    text3 = font.render(f"Saved: {saved}", True, BLACK)
+    # Helper function to center text with customizable color
+    def center_text(text, y_offset, color=BLACK):  # Default color is black
+        text_surface = font.render(text, True, color)
+        text_rect = text_surface.get_rect(center=(box_width//2, y_offset))
+        screen.blit(text_surface, text_rect)
 
-    screen.blit(text1, (10, 10))
-    screen.blit(text2, (10, 50))
-    screen.blit(text3, (10, 90))
-    # if the game is over, you display "Game over" text in the status box
+    # Draw centered text (all black)
+    center_text(f"Burning: {burning}", 35)
+    center_text(f"Protected: {protected}", 75)
+    center_text(f"Saved: {saved}", 115)
+    
+    # Centered blinking "Game Over" text (white)
     if game_over:
         current_time = pygame.time.get_ticks()
-        # blinking time is 500ms
         if (current_time // 500) % 2 == 0:
-            text4 = font.render("Game Over", True, RED)
-            screen.blit(text4, (30, 130))
+            center_text("GAME OVER", 145, WHITE)  # Explicitly set to white
 
 
 def draw_text_with_typing_effect(screen, text, font, color, x, y, delay=50):
@@ -226,19 +238,30 @@ def draw_text_with_typing_effect(screen, text, font, color, x, y, delay=50):
     return typed_text
 
 
-
-# Load and scale the background
-background_img = pygame.image.load(asset_path("background.jpg")).convert()
-background_img = pygame.transform.scale(background_img, (WIDTH, HEIGHT))
-fire_main_img = pygame.image.load(asset_path("main_background_fire.jpg")).convert()
-fire_main_img = pygame.transform.scale(fire_main_img, (WIDTH, HEIGHT))
-no_fire_main_img = pygame.image.load(asset_path("main_bacground_notfire.jpg")).convert()
-no_fire_main_img = pygame.transform.scale(no_fire_main_img, (WIDTH, HEIGHT))
-
-
-def main_menu():
-    # global screen, background, SCREEN_WIDTH, SCREEN_HEIGHT
+def get_funny_remark(saved_count, tree_count):
+    efficiency = int(100 * saved_count / tree_count)
     
+    remarks = [
+        (0, "*spits* Let's go again."),
+        (10, f"That's {saved_count} less trees to replant."),
+        (20, "At least we didn't start the fire... right?"),
+        (30, "Call that a controlled burn!"),
+        (40, "Not our worst day, not our best."),
+        (50, "Halfway to a perfect score!"),
+        (60, "Now we're cooking with gas!"),
+        (70, "Chief might actually smile about this!"),
+        (80, "Who needs a hose when you've got skills?"),
+        (90, "Save some trees for the next shift!")
+    ]
+    
+    # Find the appropriate remark
+    for threshold, remark in sorted(remarks, reverse=True):
+        if efficiency >= threshold:
+            return remark
+
+
+
+def main_menu():    
     pygame.display.set_caption("Main Menu")
 
     while True:
@@ -272,8 +295,8 @@ def main_menu():
                 if play_button.checkForInput(mouse_pos):
                     play()
                 if tutorial_button.checkForInput(mouse_pos):
-                    # tutorial()
-                    game_over_screen(screen, 5, 8)
+                    tutorial()
+                    # game_over_screen(screen, 5, 8)
                 if quit_button.checkForInput(mouse_pos):
                     pygame.quit()
                     exit()
@@ -309,13 +332,25 @@ def tutorial():
     firefighter_img = pygame.transform.scale(firefighter_img, (132, 252))
     firefighter_rect = firefighter_img.get_rect(bottomleft=(50, HEIGHT-50))
 
-
     # Button 
     next_button = Button(image=pygame.image.load(asset_path("next.png")), 
         hovering_image=pygame.image.load(asset_path("next_hover.png")),
         pos=(WIDTH // 2, HEIGHT - 50)
     )
 
+    # Load play button images and scale them to half size
+    play_img = pygame.image.load(asset_path("play.png")).convert_alpha()
+    play_hover_img = pygame.image.load(asset_path("play_hover.png")).convert_alpha()
+    
+    # Scale images to half size
+    play_img = pygame.transform.scale(play_img, (play_img.get_width() // 2, play_img.get_height() // 2))
+    play_hover_img = pygame.transform.scale(play_hover_img, 
+                                          (play_hover_img.get_width() // 2, play_hover_img.get_height() // 2))
+    
+    play_button = Button(image=play_img, 
+        hovering_image=play_hover_img,
+        pos=(WIDTH // 2, HEIGHT - 50)
+    )
 
     # Mini forest setup (4 trees in a square)
     mini_trees = [
@@ -347,15 +382,6 @@ def tutorial():
         bubble_rect = pygame.Rect(bubble_x, bubble_y, 550, 70)
 
         screen.blit(bubble_img, bubble_rect)
-
-        # Button handling
-        show_button = (typing_complete and current_line < len(dialogue) 
-                      and not (current_line == 2 and not player_protected))
-
-        if show_button:
-            next_button.changeColor(mouse_pos)
-            next_button.update(screen)
-
 
         # Draw connections
         for i, tree in enumerate(mini_trees):
@@ -426,13 +452,20 @@ def tutorial():
         text_surface = font.render(typed_text, True, BLACK)
         screen.blit(text_surface, (bubble_rect.x + 25, bubble_rect.y + 25))
 
-        # Show button when appropriate
-        show_button = (typing_complete and current_line < len(dialogue) 
-                      and not (current_line == 2 and not player_protected))
+        # Show appropriate button when needed
+        show_button = (typing_complete and 
+                       current_line < len(dialogue) and 
+                       current_line != 3 and  # No button during fire spread
+                       not (current_line == 2 and not player_protected)
+        )
         
         if show_button:
-            next_button.text_input = "PLAY!" if current_line == len(dialogue) - 1 else "NEXT"
-            next_button.update(screen)
+            if current_line == len(dialogue) - 1:  # Last line - show PLAY button
+                play_button.changeColor(mouse_pos)
+                play_button.update(screen)
+            else:  # Show NEXT button for other lines
+                next_button.changeColor(mouse_pos)
+                next_button.update(screen)
 
         # Event handling
         for event in pygame.event.get():
@@ -440,12 +473,13 @@ def tutorial():
                 pygame.quit()
                 sys.exit()
             elif event.type == pygame.MOUSEBUTTONDOWN and show_button:
-                if next_button.checkForInput(mouse_pos):
-                    if current_line < len(dialogue) - 1:
+                if current_line == len(dialogue) - 1:  # Last line
+                    if play_button.checkForInput(mouse_pos):
+                        play()  # Redirect to tree count selection
+                else:
+                    if next_button.checkForInput(mouse_pos):
                         current_line += 1
                         typing_complete = False
-                    else:
-                        return
 
         pygame.display.flip()
         clock.tick(60)
@@ -488,6 +522,24 @@ def game_over_screen(screen, saved_count, tree_count, forest=None):
     board_img = pygame.image.load(asset_path("board.png")).convert_alpha()
     board_rect = board_img.get_rect(topleft=(WIDTH // 2 - 50, HEIGHT//2 - 100))
 
+    # Dialogue configuration
+    phases = [
+        {"text": "Let's check the stats...", "target": "bubble", "delay": 30},
+        {"text": "After-action report:", "target": "board", "delay": 40, "show_after": 0},
+        {"text": f"  - Trees saved: {saved_count}", "target": "board", "delay": 30, "show_after": 1},
+        {"text": f"  - Efficiency: {int(100*saved_count/tree_count)}%", "target": "board", "delay": 30, "show_after": 2},
+        {"text": "Debrief when ready.", "target": "board", "delay": 30, "show_after": 3},
+        {"text": get_funny_remark(saved_count, tree_count), "target": "bubble", "delay": 40}
+    ]
+    
+    # Text rendering
+    current_phase = 0
+    current_char = 0
+    phase_start_time = pygame.time.get_ticks()
+    active_texts = {"bubble": "", "board": []}
+    bubble_font = pygame.font.Font(FONT_PATH, 24)
+    board_font = pygame.font.Font(FONT_PATH, 28)
+
     while running:
         # Draw the background(s)
         screen.blit(no_fire_main_img, (0, 0))
@@ -495,16 +547,6 @@ def game_over_screen(screen, saved_count, tree_count, forest=None):
         screen.blit(bubble_img, bubble_rect)
         screen.blit(board_img, board_rect)
 
-        lines = ["After-action report:",
-                f"- Trees saved: {saved_count}",
-                f"- Efficiency: {100 * saved_count / tree_count}%",
-                "Debrief when ready."]
-        
-        for i, line in enumerate(lines):
-            text = font.render(line, True, BLACK)
-            screen.blit(text, (WIDTH // 2 - 40 + 20, HEIGHT//2 - 25 + i*45))
-
-        # Get mouse position
         mouse_pos = pygame.mouse.get_pos()
 
         # Update and draw buttons
@@ -524,6 +566,45 @@ def game_over_screen(screen, saved_count, tree_count, forest=None):
                     return "replay"
                 elif new_game_button.checkForInput(mouse_pos):
                     return "new"
+                
+
+        # Text animation logic
+        if current_phase < len(phases):
+            phase = phases[current_phase]
+            
+            if current_char < len(phase["text"]):
+                if pygame.time.get_ticks() - phase_start_time > phase["delay"]:
+                    current_char += 1
+                    phase_start_time = pygame.time.get_ticks()
+                    
+                    if phase["target"] == "bubble":
+                        active_texts["bubble"] = phase["text"][:current_char]
+                    else:
+                        idx = phase.get("show_after", 0)
+                        while len(active_texts["board"]) <= idx:
+                            active_texts["board"].append("")
+                        active_texts["board"][idx] = phase["text"][:current_char]
+            else:
+                current_phase += 1
+                current_char = 0
+                phase_start_time = pygame.time.get_ticks()
+                if current_phase < len(phases) and phases[current_phase]["target"] == "bubble":
+                    active_texts["bubble"] = ""
+        
+        # Draw speech bubble with text
+        if active_texts["bubble"]:
+            bubble_text = bubble_font.render(active_texts["bubble"], True, BLACK)
+            text_rect = bubble_text.get_rect(
+                centerx=bubble_rect.centerx,
+                centery=bubble_rect.centery - 35 
+            )            
+            screen.blit(bubble_text, text_rect)
+        
+        # Draw board text
+        for i, line in enumerate(active_texts["board"]):
+            if line:  # Only render if text exists
+                text_surface = board_font.render(line, True, BLACK)
+                screen.blit(text_surface, (WIDTH // 2 - 10 + 20, HEIGHT//2 - 25 + i*45))
 
         pygame.display.flip()
         clock.tick(30)
@@ -593,7 +674,7 @@ def play():
                         else:
                             draw_rocky_path(screen, start_pos, end_pos, rock_image)
 
-
+            status_box_width = 200
             for tree in forest:
                 tree.draw(screen)
 
@@ -601,6 +682,7 @@ def play():
 
             pygame.display.flip()
             clock.tick(60)
+
 
 
 
