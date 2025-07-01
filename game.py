@@ -67,50 +67,72 @@ def draw_rocky_path(screen, start_pos, end_pos, rock_img, spacing=16):
 
 
 def get_tree_count():
-
     """
     Gets number of trees from player input (3-20)
+    Now includes a Next button and disabled Enter key confirmation
     """
-
     running = True
     input_text = ""
     error = ""
+    
+    # Create Next button
+    next_button = Button(
+        image=pygame.image.load(asset_path("next.png")),
+        hovering_image=pygame.image.load(asset_path("next_hover.png")),
+        pos=(WIDTH // 2, HEIGHT - 100)
+    )
 
     while running:
+        mouse_pos = pygame.mouse.get_pos()
         screen.blit(background_img, (0, 0))
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RETURN:
-                    if input_text:
-                        try:
-                            count = int(input_text)
-                            if 3 <= count <= 20:
-                                return count
-                            error = "Input an integer between 3 and 20."
-                        except ValueError:
-                            error = "Input an integer between 3 and 20."
-                elif event.key == pygame.K_BACKSPACE:
-                    input_text = input_text[:-1]
-                elif event.key in range(pygame.K_0, pygame.K_9 + 1):
-                    input_text += event.unicode
-
+        
         # Draw input UI
-        text_surface = font.render("Number of trees:", True, BLACK)
+        text_surface = font.render("Number of trees (3-20):", True, BLACK)
         text_rect = text_surface.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 25))
         screen.blit(text_surface, text_rect)
 
         input_box = pygame.Rect(WIDTH // 2 - 100, HEIGHT // 2 + 25, 200, 50)
         pygame.draw.rect(screen, BLACK, input_box, 2)
+        
+        # Render input text centered in the box
         input_surface = font.render(input_text, True, BLACK)
-        screen.blit(input_surface, (input_box.x + 98, input_box.y + 18))
+        text_width = input_surface.get_width()
+        screen.blit(input_surface, (input_box.x + (input_box.width - text_width) // 2, input_box.y + 15))
 
+        # Update and draw Next button
+        next_button.changeColor(mouse_pos)
+        next_button.update(screen)
+        
         if error:
             error_surface = font.render(error, True, RED)
             error_rect = error_surface.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 100))
             screen.blit(error_surface, error_rect)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+                
+            elif event.type == pygame.KEYDOWN:
+                # Disabled Enter key functionality
+                if event.key == pygame.K_BACKSPACE:
+                    input_text = input_text[:-1]
+                elif event.key in range(pygame.K_0, pygame.K_9 + 1):
+                    if len(input_text) < 2:  # Limit to 2 digits (max 20)
+                        input_text += event.unicode
+                        
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if next_button.checkForInput(mouse_pos):
+                    if input_text:
+                        try:
+                            count = int(input_text)
+                            if 3 <= count <= 20:
+                                return count
+                            error = "Please enter a number between 3-20"
+                        except ValueError:
+                            error = "Please enter a valid number"
+                    else:
+                        error = "Please enter number of trees first"
 
         pygame.display.flip()
         clock.tick(30)
