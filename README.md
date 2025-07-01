@@ -1,8 +1,8 @@
-# Gasilec (Firefighter)
-**Gasilec** is a Python-based game where you play as a firefighter aiming to protect trees from spreading fires in a randomly generated forest. The game is inspired by Hartnell's pursuit-evasion game on graphs, with unique challenges where each decision could save or doom part of the forest!
+# Firefighter
+**Firefighter** is a Python-based game where you play as a firefighter aiming to protect trees from spreading fires in a randomly generated forest. The game is inspired by Hartnell's pursuit-evasion game on graphs, with unique challenges where each decision could save or doom part of the forest!
 
 ## Game Overview
-In **Gasilec**, a fire breaks out in a procedurally generated forest where:
+In **Firefighter**, a fire breaks out in a procedurally generated forest where:
 
 - Trees are nodes in a complex network
 - Rocky paths between trees serve as fire spread routes
