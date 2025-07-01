@@ -335,16 +335,15 @@ def main_menu():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
-                exit()
+                sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if play_button.checkForInput(mouse_pos):
                     play()
                 if tutorial_button.checkForInput(mouse_pos):
                     tutorial()
-                    # game_over_screen(screen, 5, 8)
                 if quit_button.checkForInput(mouse_pos):
                     pygame.quit()
-                    exit()
+                    sys.exit()
         pygame.display.update()
         clock.tick(60)
 
