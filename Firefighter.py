@@ -82,12 +82,32 @@ def get_tree_count():
         pos=(WIDTH // 2, HEIGHT - 100)
     )
 
+    firefighter_img = pygame.image.load(asset_path("firefighter_moved.png")).convert_alpha()
+    firefighter_rect = firefighter_img.get_rect(topleft=(0, 100))
+
+    bubble_img = pygame.image.load(asset_path("bubble3.png")).convert_alpha()
+    bubble_x = 30
+    bubble_y = 10
+    bubble_rect = pygame.Rect(bubble_x, bubble_y, 550, 70)
+
+    dialogue = ["Type the number of trees you wish your forest to have. Then, click NEXT."]
+
+    typed_text = ""
+    typing = False
+    typing_complete = False
+
     while running:
         mouse_pos = pygame.mouse.get_pos()
         screen.blit(background_img, (0, 0))
+
+        screen.blit(firefighter_img, firefighter_rect)
         
+        # Speech bubble      
+        screen.blit(bubble_img, bubble_rect)
+        small_font = pygame.font.Font(FONT_PATH, 50)
+
         # Draw input UI
-        text_surface = font.render("Number of trees (3-20):", True, BLACK)
+        text_surface = small_font.render("Number of trees (5-25):", True, BLACK)
         text_rect = text_surface.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 25))
         screen.blit(text_surface, text_rect)
 
@@ -95,18 +115,13 @@ def get_tree_count():
         pygame.draw.rect(screen, BLACK, input_box, 2)
         
         # Render input text centered in the box
-        input_surface = font.render(input_text, True, BLACK)
+        input_surface = small_font.render(input_text, True, BLACK)
         text_width = input_surface.get_width()
         screen.blit(input_surface, (input_box.x + (input_box.width - text_width) // 2, input_box.y + 15))
 
         # Update and draw Next button
         next_button.changeColor(mouse_pos)
         next_button.update(screen)
-        
-        if error:
-            error_surface = font.render(error, True, RED)
-            error_rect = error_surface.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 100))
-            screen.blit(error_surface, error_rect)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -126,13 +141,41 @@ def get_tree_count():
                     if input_text:
                         try:
                             count = int(input_text)
-                            if 3 <= count <= 20:
+                            if 5 <= count <= 25:
                                 return count
-                            error = "Please enter a number between 3-20"
+                            dialogue = ["Please enter a number between 5 and 25!"]
                         except ValueError:
-                            error = "Please enter a valid number"
+                            dialogue = ["Please enter a valid number!"]
                     else:
-                        error = "Please enter a number of trees first"
+                        dialogue = ["Please enter a number of trees first..."]
+
+                    # Restart typing for error message
+                    typed_text = ""
+                    typing = True
+                    typing_complete = False
+                    typing_start_time = pygame.time.get_ticks()
+
+        
+        # Typing logic
+        if not typing and not typing_complete:
+            typing = True
+            typing_complete = False
+            typed_text = ""
+            typing_start_time = pygame.time.get_ticks()
+
+        if typing:
+            elapsed = pygame.time.get_ticks() - typing_start_time
+            chars_to_show = min(len(dialogue[0]), elapsed // 50)
+            typed_text = dialogue[0][:chars_to_show]
+            
+            if len(typed_text) == len(dialogue[0]):
+                typing = False
+                typing_complete = True
+
+        # Render text
+        font = pygame.font.Font(FONT_PATH, 24)
+        text_surface = font.render(typed_text, True, BLACK)
+        screen.blit(text_surface, (bubble_rect.x + 25, bubble_rect.y + 25))
 
         pygame.display.flip()
         clock.tick(30)
