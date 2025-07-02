@@ -384,11 +384,11 @@ def tutorial():
     dialogue = [
         "Hey there, rookie! The forest is on FIRE!",
         "See those rocky paths? Fire spreads ONLY along them!",
-        "Hover over trees to see connections. Click to PROTECT one!",
+        "You can hover over any tree to see its neighbours.",
+        "Click on a tree, which is not on fire, to PROTECT it!",
         "Good! Protected trees (blue aura) won't burn. Watch the fire spread...",
-        "The game ends when the fire can't spread further.",  # New line
-        "You'll see how many trees you saved!",
-        "Now try saving more trees before the forest is engulfed! Ready?"
+        "The game ends when the fire can't spread further.", 
+        "Now you know everything! Ready to save another forest?"
     ]
 
     typed_text = ""
@@ -427,14 +427,12 @@ def tutorial():
         Tree(x=int(WIDTH*0.6), y=int(HEIGHT*0.2)),  # Was 0.4 (moved up)
         Tree(x=int(WIDTH*0.8), y=int(HEIGHT*0.2)),  # Was 0.4 (moved up)
         Tree(x=int(WIDTH*0.6), y=int(HEIGHT*0.5)),  # Was 0.6 (moved up)
-        Tree(x=int(WIDTH*0.8), y=int(HEIGHT*0.5))   # Was 0.6 (moved up)
     ]
     
     # Set up connections
     mini_trees[0].neighbors = [mini_trees[1], mini_trees[2]]
-    mini_trees[1].neighbors = [mini_trees[0], mini_trees[3]]
-    mini_trees[2].neighbors = [mini_trees[0], mini_trees[3]]
-    mini_trees[3].neighbors = [mini_trees[1], mini_trees[2]]
+    mini_trees[1].neighbors = [mini_trees[0], mini_trees[2]]
+    mini_trees[2].neighbors = [mini_trees[0], mini_trees[1]]
     
     # Set initial burning tree
     mini_trees[2].catch_fire()
@@ -472,46 +470,24 @@ def tutorial():
                 hovered_tree = tree
                 break
 
-        # Interactive protection during line 2
-        if typing_complete and current_line == 2:
+        # Interactive protection during line 3
+        if typing_complete and current_line == 3:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     for tree in mini_trees:
-                        if tree.is_clicked(mouse_pos) and tree.color == BLACK:
+                        if tree.is_clicked(mouse_pos):
                             tree.protect()
                             player_protected = True
-                            tree_protected = True
+                            current_line += 1
+                            typing_complete = False
                             break
                         
-                    if tree_protected:
-                        # Immediate visual update
-                        screen.blit(background_img, (0, 0))
-                        screen.blit(firefighter_img, firefighter_rect)
-                        screen.blit(bubble_img, bubble_rect)
-
-                        for i, tree in enumerate(mini_trees):
-                            for neighbor in tree.neighbors:
-                                if i < mini_trees.index(neighbor):
-                                    start_pos = (tree.x + 40, tree.y + 50)
-                                    end_pos = (neighbor.x + 40, neighbor.y + 50)
-                                    draw_rocky_path(screen, start_pos, end_pos, rock_image)
                         
-                        for tree in mini_trees:
-                            tree.draw(screen)
-                            
-                        # Update display
-                        pygame.display.flip()
-                        
-                        # Auto-advance after showing protection
-                        pygame.time.delay(800)  # Let player see the protection
-                        current_line += 1
-                        typing_complete = False
-
         # Auto-advance after fire spread demonstration
-        elif typing_complete and current_line == 3 and not any(t.color == BLACK for t in mini_trees[2].neighbors):
+        elif typing_complete and current_line == 4 and not any(t.color == BLACK for t in mini_trees[2].neighbors):
             pygame.time.delay(1500)  # Let player observe
             current_line += 1
             typing_complete = False
@@ -536,7 +512,7 @@ def tutorial():
                 typing = False
                 typing_complete = True
                 # Auto-spread fire after protection explanation
-                if current_line == 3:
+                if current_line == 4:
                     for neighbor in mini_trees[2].neighbors:
                         if neighbor.color == BLACK:
                             neighbor.catch_fire()
@@ -549,8 +525,8 @@ def tutorial():
         # Show appropriate button when needed
         show_button = (typing_complete and 
                        current_line < len(dialogue) and 
-                       current_line != 3 and  # No button during fire spread
-                       not (current_line == 2 and not player_protected)
+                       current_line != 4 and  # No button during fire spread
+                       not (current_line == 3 and not player_protected)
         )
         
         if show_button:
