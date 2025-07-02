@@ -1,5 +1,5 @@
-# Firefighter
-**Firefighter** is a Python-based game where you play as a firefighter aiming to protect trees from spreading fires in a randomly generated forest. The game is inspired by Hartnell's pursuit-evasion game on graphs, with unique challenges where each decision could save or doom part of the forest!
+#  Firefighter
+**Firefighter** is a Python-based game where you play as a firefighter aiming to protect trees from spreading fires in a randomly generated forest. The game is inspired by Hartnell's pursuit-evasion game on graphs, with unique challenges where each decision could save or doom part of the forest.
 
 ## Game Overview
 In **Firefighter**, a fire breaks out in a procedurally generated forest where:
@@ -13,13 +13,16 @@ In **Firefighter**, a fire breaks out in a procedurally generated forest where:
 # Installation
 For Windows Users:
 
-- Go to the Releases section on GitHub
+- Go to the Releases section on GitHub (on the right side of the screen)
 - Download both:
-  - game.exe (executable)
+  - Firefighter.exe (executable)
   - Source Code.zip (game assets)
-- Extract the Source Code.zip to get a folder named gasilec
-- Move game.exe into the extracted gasilec-1 folder
-- Double-click game.exe and wait a few seconds for the game to launch
+- Extract the Source Code.zip
+- Move Firefighter.exe into the extracted folder
+- Double-click Firefighter.exe and wait a few seconds for the game to launch
+
+
+![](https://github.com/user-attachments/assets/a8027b89-1d5c-4ddf-a5db-89665297038c)
 
 
 # Gameplay Mechanics
